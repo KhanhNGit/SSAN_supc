@@ -56,7 +56,7 @@ def main(args):
     # define loss
     binary_fuc = nn.CrossEntropyLoss()
     contra_func = ContrastLoss()
-    supcon_func = Supervised_Contrastive_Loss()
+    supcon_func = SupContrast()
 
     # metrics
     eva = {
@@ -96,7 +96,8 @@ def main(args):
             contrast_label = torch.where(contrast_label==True, 1, -1)
             constra_loss = contra_func(fea_x1_x1, fea_x1_x2, contrast_label) * args.lambda_contrast
 
-            supcon_loss = supcon_func(fea_x1.unsqueeze(1), UUID * 10 + label, temperature=0.1) * args.lambda_contrast
+            fea_x1_ensemble = torch.cat([fea_x1.unsqueeze(1), fea_x1.unsqueeze(1)], dim=1)
+            supcon_loss = supcon_func(fea_x1_ensemble, UUID.long() * 10 + label[:, 0].long()) * args.lambda_supcon
             loss_all = binary_loss + constra_loss + supcon_loss
 
             n = image_x.shape[0]

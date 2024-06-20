@@ -19,14 +19,14 @@ class ContrastLoss(nn.Module):
     
 
 # supervised contrastive loss
-class Supervised_Contrastive_Loss(nn.Module):
+class SupContrast(nn.Module):
 
-    def __init__(self):
-        super(Supervised_Contrastive_Loss, self).__init__()
-        pass
+    def __init__(self, temperature=0.07, base_temperature=0.07):
+        super(SupContrast, self).__init__()
+        self.temperature = temperature
+        self.base_temperature = base_temperature
 
-    def forward(self, features, labels=None, mask=None, temperature = 0.1):
-        base_temperature = 0.07
+    def forward(self, features, labels=None, mask=None):
         """Compute loss for model. If both `labels` and `mask` are None,
         it degenerates to SimCLR unsupervised loss:
         https://arxiv.org/pdf/2002.05709.pdf
@@ -65,7 +65,7 @@ class Supervised_Contrastive_Loss(nn.Module):
         anchor_count = contrast_count
 
         # compute logits
-        anchor_dot_contrast = torch.div(torch.matmul(anchor_feature, contrast_feature.T), temperature)
+        anchor_dot_contrast = torch.div(torch.matmul(anchor_feature, contrast_feature.T), self.temperature)
         # for numerical stability
         logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
         logits = anchor_dot_contrast - logits_max.detach()
@@ -81,10 +81,13 @@ class Supervised_Contrastive_Loss(nn.Module):
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
 
         # compute mean of log-likelihood over positive
-        mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
+        mask_pos_pairs = mask.sum(1)
+        mask_pos_pairs = torch.where(mask_pos_pairs < 1e-6, 1, mask_pos_pairs)
+
+        mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs
 
         # loss
-        loss = - (temperature / base_temperature) * mean_log_prob_pos
+        loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
         loss = loss.view(anchor_count, batch_size).mean()
 
         return loss
