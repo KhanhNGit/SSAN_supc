@@ -21,7 +21,7 @@ class ContrastLoss(nn.Module):
 # supervised contrastive loss
 class SupContrast(nn.Module):
 
-    def __init__(self, temperature=0.07, base_temperature=0.07):
+    def __init__(self, temperature=0.1, base_temperature=0.07):
         super(SupContrast, self).__init__()
         self.temperature = temperature
         self.base_temperature = base_temperature
